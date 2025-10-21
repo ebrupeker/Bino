@@ -21,6 +21,7 @@ jobs:
           pip install pyinstaller -r requirements.txt
 
       - name: Build executable
+        shell: cmd
         run: |
           pyinstaller --onefile ^
             --name Bino ^
