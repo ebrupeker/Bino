@@ -229,7 +229,7 @@ def show():
     animatables.append(logo)
 
     exit_card = (
-        "Exit",             # text
+        "Cikis",            # text
         -c.WINWIDTH * 1/2,  # start x
         c.HALF_WINHEIGHT,   # start y
         c.WINWIDTH * 1/4,   # end x
@@ -238,7 +238,7 @@ def show():
     )
 
     start_card = (
-        "Start",            # text
+        "Baslat",           # text
         c.WINWIDTH * 3/2,   # start x
         c.HALF_WINHEIGHT,   # start y
         c.WINWIDTH * 3/4,   # end x

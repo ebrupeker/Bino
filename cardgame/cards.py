@@ -1,33 +1,60 @@
 import random
 import json
 
+SPECIAL_ALWAYS_MATCH = {"renk_degistir"}
+
+
+def _normalize(value):
+    return value.lower() if isinstance(value, str) else value
+
+
 class Card:
-    def __init__(self, id=None, value: str=None, color: str=None):
+    def __init__(self, id=None, value: str = None, color: str = None, system: str = None):
         self.id = id
         self.value = value
         self.color = color
+        self.system = system
     
     def __str__(self):
+        if self.system:
+            return f"{self.color} {self.system} {self.value}"
         return f"{self.color} {self.value}"
 
     def __repr__(self):
         return str(self)
 
+    def _is_special(self):
+        return self.value in SPECIAL_ALWAYS_MATCH or _normalize(self.color) in {"wild", "special"}
+
     def match(self, other):
-        return self.color == other.color or \
-               self.value == other.value or \
-               self.value == "wild" or \
-               self.value == "wild_draw" or \
-               other.color == "wild"
+        if other is None:
+            return True
+
+        if self._is_special() or other._is_special():
+            return True
+
+        same_color = (
+            self.color is not None
+            and other.color is not None
+            and _normalize(self.color) == _normalize(other.color)
+        )
+        same_system = (
+            self.system is not None
+            and other.system is not None
+            and _normalize(self.system) == _normalize(other.system)
+        )
+
+        return same_color or same_system
     
     def reprJSON(self):
-        return dict(id=self.id, value=self.value, color=self.color)
+        return dict(id=self.id, value=self.value, color=self.color, system=self.system)
 
     def loadJSON(self, data):
         jsondata = json.loads(data)
         self.id = jsondata["id"]
         self.value = jsondata["value"]
         self.color = jsondata["color"]
+        self.system = jsondata.get("system")
         return self
     
     def __eq__(self, other):

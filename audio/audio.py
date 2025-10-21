@@ -38,8 +38,6 @@ sfx_tick.set_volume(1.0)
 sfx_timer = mixer.Sound(sfx_path + '/Timer.wav')
 sfx_timer.set_volume(1.0)
 
-sfx_uno = mixer.Sound(sfx_path + '/Uno.wav')
-sfx_uno.set_volume(1.0)
 
 sfx_whoosh = mixer.Sound(sfx_path + '/Whoosh.wav')
 sfx_whoosh.set_volume(1.0)

@@ -1,97 +1,133 @@
 import pygame
-from pkg_resources import resource_filename
-assets_path = resource_filename('animation', 'assets')
-LOGO = pygame.image.load(assets_path + '/Logo.png')
-DASH = pygame.image.load(assets_path + '/Dashed_Border.png')
-DECK = pygame.image.load(assets_path + '/Deck.png')
-BDECK = pygame.image.load(assets_path + '/Bordered_Deck.png')
-BLANK = pygame.image.load(assets_path + '/Blank.png')
-FELT = pygame.image.load(assets_path + '/Green_Felt.jpg')
-INSTRUCTIONS_LEFT = pygame.image.load(assets_path + '/instructions_left.png')
-INSTRUCTIONS_RIGHT = pygame.image.load(assets_path + '/instructions_right.png')
+from pathlib import Path
+from typing import Dict, Tuple
 
-CS_PROFS = [
-    pygame.image.load(assets_path + '/gosnell.png'),
-    pygame.image.load(assets_path + '/markowsky.png'),
-    pygame.image.load(assets_path + '/mcmillin.png'),
-    pygame.image.load(assets_path + '/morales.png'),
-    pygame.image.load(assets_path + '/price.png'),
-    pygame.image.load(assets_path + '/sabharwal.png')
-]
+from cardgame.biology_config import (
+    BIOLOGY_CARDS,
+    BIOLOGY_COLORS,
+    DRAW_CARD_VALUES,
+    SWAP_CARD_VALUE,
+    FALLBACK_COLOR_MAP,
+)
 
-# Used for choosing wildcard color
+pygame.font.init()
+
+ASSETS_PATH = Path(__file__).resolve().parent / "assets"
+
+
+def _load_image(filename: str) -> pygame.Surface:
+    return pygame.image.load(str(ASSETS_PATH / filename))
+
+
+def _load_first_existing(basename: str) -> pygame.Surface:
+    for ext in (".png", ".jpg", ".jpeg"):
+        candidate = ASSETS_PATH / f"{basename}{ext}"
+        if candidate.exists():
+            return pygame.image.load(str(candidate))
+    raise FileNotFoundError(f"Kart görseli bulunamadı: {basename}(.png/.jpg/.jpeg)")
+
+
+def _build_placeholder(color: Tuple[int, int, int], text: str) -> pygame.Surface:
+    width, height = 200, 300
+    surface = pygame.Surface((width, height))
+    surface.fill(color)
+    border_color = (255, 255, 255)
+    pygame.draw.rect(surface, border_color, surface.get_rect(), width=6)
+
+    font = pygame.font.SysFont("arial", 36)
+    text_surf = font.render(text, True, border_color)
+    text_rect = text_surf.get_rect()
+    text_rect.center = (width // 2, height // 2)
+    surface.blit(text_surf, text_rect)
+    return surface
+
+
+LOGO = _load_image("Logo.png")
+DASH = _load_image("Dashed_Border.png")
+DECK = _load_image("Deck.png")
+BDECK = _load_image("Bordered_Deck.png")
+BLANK = _load_image("Blank.png")
+FELT = _load_image("Green_Felt.jpg")
+INSTRUCTIONS_LEFT = _load_image("instructions_left.png")
+INSTRUCTIONS_RIGHT = _load_image("instructions_right.png")
+
 WILDWHEEL = {
-    'BLUE': pygame.image.load(assets_path + '/Wildwheel_Blue.png'),
-    'RED':  pygame.image.load(assets_path + '/Wildwheel_Red.png'),
-    'YELLOW': pygame.image.load(assets_path + '/Wildwheel_Yellow.png'),
-    'GREEN': pygame.image.load(assets_path + '/Wildwheel_Green.png')
+    "yesil": _load_image("Wildwheel_Green.png"),
+    "kirmizi": _load_image("Wildwheel_Red.png"),
+    "turuncu": _load_image("Wildwheel_Red.png"),
+    "mavi": _load_image("Wildwheel_Blue.png"),
+    "sari": _load_image("Wildwheel_Yellow.png"),
 }
 
 WILDMORPH = {
-    'BLUE_WILD': pygame.image.load(assets_path + '/Blue_Wild.png'),
-    'RED_WILD': pygame.image.load(assets_path + '/Red_Wild.png'),
-    'GREEN_WILD': pygame.image.load(assets_path + '/Green_Wild.png'),
-    'YELLOW_WILD': pygame.image.load(assets_path + '/Yellow_Wild.png'),
+    "yesil": _load_image("Green_Wild.png"),
+    "kirmizi": _load_image("Red_Wild.png"),
+    "turuncu": _load_image("Red_Wild.png"),
+    "mavi": _load_image("Blue_Wild.png"),
+    "sari": _load_image("Yellow_Wild.png"),
 }
 
-CARDS = {
-    # Blue Cards
-    'BLUE_0': pygame.image.load(assets_path + '/Blue_0.png'),
-    'BLUE_1': pygame.image.load(assets_path + '/Blue_1.png'),
-    'BLUE_2': pygame.image.load(assets_path + '/Blue_2.png'),
-    'BLUE_3': pygame.image.load(assets_path + '/Blue_3.png'),
-    'BLUE_4': pygame.image.load(assets_path + '/Blue_4.png'),
-    'BLUE_5': pygame.image.load(assets_path + '/Blue_5.png'),
-    'BLUE_6': pygame.image.load(assets_path + '/Blue_6.png'),
-    'BLUE_7': pygame.image.load(assets_path + '/Blue_7.png'),
-    'BLUE_8': pygame.image.load(assets_path + '/Blue_8.png'),
-    'BLUE_9': pygame.image.load(assets_path + '/Blue_9.png'),
-    'BLUE_DRAW': pygame.image.load(assets_path + '/Blue_Draw.png'),
-    'BLUE_REVERSE': pygame.image.load(assets_path + '/Blue_Reverse.png'),
-    'BLUE_SKIP': pygame.image.load(assets_path + '/Blue_Skip.png'),
-    # Green Cards
-    'GREEN_0': pygame.image.load(assets_path + '/Green_0.png'),
-    'GREEN_1': pygame.image.load(assets_path + '/Green_1.png'),
-    'GREEN_2': pygame.image.load(assets_path + '/Green_2.png'),
-    'GREEN_3': pygame.image.load(assets_path + '/Green_3.png'),
-    'GREEN_4': pygame.image.load(assets_path + '/Green_4.png'),
-    'GREEN_5': pygame.image.load(assets_path + '/Green_5.png'),
-    'GREEN_6': pygame.image.load(assets_path + '/Green_6.png'),
-    'GREEN_7': pygame.image.load(assets_path + '/Green_7.png'),
-    'GREEN_8': pygame.image.load(assets_path + '/Green_8.png'),
-    'GREEN_9': pygame.image.load(assets_path + '/Green_9.png'),
-    'GREEN_DRAW': pygame.image.load(assets_path + '/Green_Draw.png'),
-    'GREEN_REVERSE': pygame.image.load(assets_path + '/Green_Reverse.png'),
-    'GREEN_SKIP': pygame.image.load(assets_path + '/Green_Skip.png'),
-    # Red Cards
-    'RED_0': pygame.image.load(assets_path + '/Red_0.png'),
-    'RED_1': pygame.image.load(assets_path + '/Red_1.png'),
-    'RED_2': pygame.image.load(assets_path + '/Red_2.png'),
-    'RED_3': pygame.image.load(assets_path + '/Red_3.png'),
-    'RED_4': pygame.image.load(assets_path + '/Red_4.png'),
-    'RED_5': pygame.image.load(assets_path + '/Red_5.png'),
-    'RED_6': pygame.image.load(assets_path + '/Red_6.png'),
-    'RED_7': pygame.image.load(assets_path + '/Red_7.png'),
-    'RED_8': pygame.image.load(assets_path + '/Red_8.png'),
-    'RED_9': pygame.image.load(assets_path + '/Red_9.png'),
-    'RED_DRAW': pygame.image.load(assets_path + '/Red_Draw.png'),
-    'RED_REVERSE': pygame.image.load(assets_path + '/Red_Reverse.png'),
-    'RED_SKIP': pygame.image.load(assets_path + '/Red_Skip.png'),
-    # Yellow Cards
-    'YELLOW_0': pygame.image.load(assets_path + '/Yellow_0.png'),
-    'YELLOW_1': pygame.image.load(assets_path + '/Yellow_1.png'),
-    'YELLOW_2': pygame.image.load(assets_path + '/Yellow_2.png'),
-    'YELLOW_3': pygame.image.load(assets_path + '/Yellow_3.png'),
-    'YELLOW_4': pygame.image.load(assets_path + '/Yellow_4.png'),
-    'YELLOW_5': pygame.image.load(assets_path + '/Yellow_5.png'),
-    'YELLOW_6': pygame.image.load(assets_path + '/Yellow_6.png'),
-    'YELLOW_7': pygame.image.load(assets_path + '/Yellow_7.png'),
-    'YELLOW_8': pygame.image.load(assets_path + '/Yellow_8.png'),
-    'YELLOW_9': pygame.image.load(assets_path + '/Yellow_9.png'),
-    'YELLOW_DRAW': pygame.image.load(assets_path + '/Yellow_Draw.png'),
-    'YELLOW_REVERSE': pygame.image.load(assets_path + '/Yellow_Reverse.png'),
-    'YELLOW_SKIP': pygame.image.load(assets_path + '/Yellow_Skip.png'),
-    # Other Cards
-    'WILD_WILD': pygame.image.load(assets_path + '/Wild.png'),
-    'WILD_WILD_DRAW': pygame.image.load(assets_path + '/Wild_Draw.png')
+
+def _biology_key(color: str, system: str, organ: str) -> str:
+    return f"{color.lower()}_{system.lower()}_{organ.lower()}"
+
+
+BIOLOGY_CARD_SURFACES: Dict[str, pygame.Surface] = {}
+
+for info in BIOLOGY_CARDS:
+    try:
+        surface = _load_image(info.filename)
+    except FileNotFoundError:
+        fallback_color = FALLBACK_COLOR_MAP.get(info.color, FALLBACK_COLOR_MAP["special"])
+        surface = _build_placeholder(fallback_color, info.organ.replace("_", " "))
+    BIOLOGY_CARD_SURFACES[_biology_key(info.color, info.system, info.organ)] = surface
+
+
+COLORED_SPECIAL_SURFACES: Dict[Tuple[str, str], pygame.Surface] = {}
+for color in BIOLOGY_COLORS:
+    for value in DRAW_CARD_VALUES + [SWAP_CARD_VALUE]:
+        basename = f"{color}_{value}"
+        surf = _load_first_existing(basename)
+        COLORED_SPECIAL_SURFACES[(color, value)] = surf
+
+SPECIAL_CARD_SURFACES: Dict[str, pygame.Surface] = {
+    "renk_degistir": _load_image("Wild.png"),
 }
+
+# Legacy CARDS dict used by intro animation – populate with biology and special cards.
+CARDS: Dict[str, pygame.Surface] = {}
+for key, surface in BIOLOGY_CARD_SURFACES.items():
+    CARDS[key.upper()] = surface
+for (color, value), surface in COLORED_SPECIAL_SURFACES.items():
+    CARDS[f"{color}_{value}".upper()] = surface
+for value, surface in SPECIAL_CARD_SURFACES.items():
+    CARDS[f"SPECIAL_{value.upper()}"] = surface
+
+
+def get_biology_surface(color: str, system: str, organ: str) -> pygame.Surface:
+    key = _biology_key(color, system, organ)
+    try:
+        return BIOLOGY_CARD_SURFACES[key]
+    except KeyError as exc:
+        fallback = _build_placeholder(FALLBACK_COLOR_MAP.get(color, FALLBACK_COLOR_MAP["special"]), organ.replace("_", " "))
+        BIOLOGY_CARD_SURFACES[key] = fallback
+        CARDS[key.upper()] = fallback
+        return fallback
+
+
+def get_special_surface(value: str) -> pygame.Surface:
+    surface = SPECIAL_CARD_SURFACES.get(value)
+    if surface is not None:
+        return surface
+
+    fallback = _build_placeholder(FALLBACK_COLOR_MAP["special"], value)
+    SPECIAL_CARD_SURFACES[value] = fallback
+    CARDS[f"SPECIAL_{value.upper()}"] = fallback
+    return fallback
+
+
+def get_colored_special_surface(color: str, value: str) -> pygame.Surface:
+    key = (color, value)
+    if key not in COLORED_SPECIAL_SURFACES:
+        raise KeyError(f"Görsel bulunamadı: {color}_{value}")
+    return COLORED_SPECIAL_SURFACES[key]

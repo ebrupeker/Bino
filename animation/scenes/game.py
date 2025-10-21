@@ -1,4 +1,5 @@
 import pygame
+import pygame.locals as pg
 import threading
 import time
 import random
@@ -14,6 +15,8 @@ from ..assets import DECK, CARDS, BDECK
 from ..card import Card
 from ..animatable import Animatable
 from ..helpers import put_felt_background
+from ..util import next_frame
+from cardgame.biology_config import WILD_ANIMATION_COLORS
 
 # Maps id => Card
 cards = {}
@@ -24,6 +27,10 @@ hand = PrimaryHand()
 
 wildcard_quadrants = []
 wildcard_background = None
+debug_system_label = None
+input_overlay = None
+escape_cancelled_flag = False
+
 
 
 def track_card(surface, id):
@@ -195,18 +202,14 @@ def _wildcard_morph(color, wait):
     after the player has picked their color from the wildcard wheel.
     Parameters:
     -----------
-    color: 0 -> blue, 1 -> red, 2 -> yellow, 3 -> green
+    color: 0 -> mavi, 1 -> kirmizi, 2 -> sari, 3 -> yesil
     wait: duration in seconds
     """
-    if color == 0:
-        surf = WILDMORPH["BLUE_WILD"]
-    elif color == 1:
-        surf = WILDMORPH["RED_WILD"]
-    elif color == 2:
-        surf = WILDMORPH["YELLOW_WILD"]
-    elif color == 3:
-        surf = WILDMORPH["GREEN_WILD"]
-    else:
+    if color < 0 or color >= len(WILD_ANIMATION_COLORS):
+        raise Exception
+    color_name = WILD_ANIMATION_COLORS[color]
+    surf = WILDMORPH.get(color_name)
+    if surf is None:
         raise Exception
 
     if wait < 0:
@@ -284,10 +287,10 @@ def switch_wildcard_wheel_focus(quadrant):
     -----------
     quadrant: an integer representing one of the four quadrants, which are laid
         out in the traditional mathematical way:
-            0 -> Q1 (top-right)    : Blue
-            1 -> Q2 (top-left)     : Red
-            2 -> Q3 (bottom-left)  : Yellow
-            3 -> Q4 (bottom-right) : Green
+            0 -> Q1 (top-right)    : Mavi
+            1 -> Q2 (top-left)     : Kirmizi
+            2 -> Q3 (bottom-left)  : Sari
+            3 -> Q4 (bottom-right) : Yesil
     """
     # Check for valid input
     if quadrant < 0 or quadrant > 3:
@@ -324,14 +327,168 @@ def switch_wildcard_wheel_focus(quadrant):
     )
 
 
+def update_debug_system(system_name):
+    """No-op retained for backward compatibility."""
+    global debug_system_label
+    if debug_system_label is not None:
+        animatables = SharedObjects.get_animatables()
+        if debug_system_label in animatables:
+            animatables.remove(debug_system_label)
+        debug_system_label = None
+
+
+def _cleanup_input_overlay():
+    global input_overlay
+    if input_overlay is not None:
+        disposable = SharedObjects.get_disposable_animatables()
+        for item in input_overlay:
+            if item in disposable:
+                disposable.remove(item)
+        input_overlay = None
+
+
+def prompt_for_card_explanation(card):
+    """
+    Displays a text input overlay asking the player to describe the selected card.
+    Returns the entered description or None if cancelled.
+    """
+    global input_overlay
+
+    surface_height = SharedObjects.get_surface().get_rect().h
+    title_font = pygame.font.SysFont("Arial", round(0.06 * surface_height), bold=True)
+    base_font = pygame.font.SysFont("Arial", round(0.04 * surface_height))
+    overlay_surf = pygame.Surface((c.WINWIDTH, c.WINHEIGHT), pygame.SRCALPHA)
+    overlay_surf.fill((0, 0, 0, 210))
+    overlay = Animatable(overlay_surf, c.HALF_WINWIDTH, c.HALF_WINHEIGHT, hidden=False)
+
+    prompt_text = "Bino kartını açıkla"
+
+    def render_wrapped(text, font, color, max_width):
+        words = text.split()
+        if not words:
+            surface = font.render("", True, color)
+            return surface
+        lines = []
+        current = words[0]
+        for word in words[1:]:
+            test_line = current + " " + word
+            if font.size(test_line)[0] <= max_width:
+                current = test_line
+            else:
+                lines.append(current)
+                current = word
+        lines.append(current)
+        surfaces = [font.render(line, True, color) for line in lines]
+        width = min(max_width, max(s.get_width() for s in surfaces))
+        height = sum(s.get_height() for s in surfaces)
+        surface = pygame.Surface((width, height), pygame.SRCALPHA)
+        y = 0
+        for s in surfaces:
+            rect = s.get_rect()
+            rect.centerx = width // 2
+            rect.y = y
+            surface.blit(s, rect)
+            y += s.get_height()
+        return surface
+
+    max_text_width = int(c.WINWIDTH * 0.6)
+    prompt_surf = render_wrapped(prompt_text, title_font, (255, 255, 255), max_text_width)
+    prompt = Animatable(prompt_surf, c.HALF_WINWIDTH, c.HALF_WINHEIGHT * 0.35, hidden=False)
+
+    instruction_surf = base_font.render("Kartı Bino'ya açıklayıp Enter'a bas (ESC ile iptal)", True, (200, 200, 200))
+    instruction = Animatable(instruction_surf, c.HALF_WINWIDTH, c.HALF_WINHEIGHT * 0.45, hidden=False)
+
+    input_text = ""
+    input_surf = base_font.render("", True, (255, 255, 0))
+    input_field = Animatable(input_surf, c.HALF_WINWIDTH, c.HALF_WINHEIGHT * 0.55, hidden=False)
+
+    pygame.key.start_text_input()
+    if pygame.scrap.get_init():
+        pygame.scrap.set_mode(pygame.SCRAP_CLIPBOARD)
+
+    disposable = SharedObjects.get_disposable_animatables()
+    disposable.append(overlay)
+    disposable.append(prompt)
+    disposable.append(instruction)
+    disposable.append(input_field)
+    input_overlay = [overlay, prompt, instruction, input_field]
+
+    accepted_text = None
+    esc_cancelled = False
+    collecting = True
+    try:
+        while collecting:
+            events = pygame.event.get()
+            for event in events:
+                if event.type == pygame.QUIT:
+                    collecting = False
+                    accepted_text = None
+                    esc_cancelled = True
+                    break
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pg.K_RETURN:
+                        accepted_text = input_text.strip()
+                        collecting = False
+                        break
+                    elif event.key == pg.K_ESCAPE:
+                        accepted_text = None
+                        collecting = False
+                        esc_cancelled = True
+                        break
+                    elif event.key == pg.K_BACKSPACE:
+                        input_text = input_text[:-1]
+                    elif event.key == pg.K_v and (event.mod & (pg.KMOD_CTRL | pg.KMOD_META)):
+                        if pygame.scrap.get_init():
+                            clipboard = pygame.scrap.get(pygame.SCRAP_TEXT)
+                            if clipboard:
+                                if isinstance(clipboard, bytes):
+                                    try:
+                                        clipboard = clipboard.decode("utf-8")
+                                    except UnicodeDecodeError:
+                                        clipboard = clipboard.decode("latin-1", errors="ignore")
+                                input_text += str(clipboard).replace("\r\n", "\n").replace("\r", "\n")
+                if event.type == pygame.TEXTINPUT:
+                    input_text += event.text
+
+            display_text = input_text + ("|" if pygame.time.get_ticks() // 500 % 2 == 0 else "")
+            input_field_surface = render_wrapped(display_text, base_font, (255, 255, 0), max_text_width)
+            input_center = input_field.rect.center
+            input_field.original_surface = input_field_surface
+            input_field.surface = input_field_surface
+            input_field.rect = input_field_surface.get_rect(center=input_center)
+
+            next_frame()
+    finally:
+        pygame.key.stop_text_input()
+        _cleanup_input_overlay()
+        if esc_cancelled:
+            global escape_cancelled_flag
+            escape_cancelled_flag = True
+    return accepted_text
+
+
+def consume_escape_cancelled():
+    global escape_cancelled_flag
+    if escape_cancelled_flag:
+        escape_cancelled_flag = False
+        return True
+    return False
+
+
 def reset():
     global wildcard_quadrants
-    global cards, opponents, hand
+    global cards, opponents, hand, debug_system_label
 
     wildcard_quadrants.clear()
     cards.clear()
     opponents.clear()
     hand = PrimaryHand()
+
+    if debug_system_label is not None:
+        animatables = SharedObjects.get_animatables()
+        if debug_system_label in animatables:
+            animatables.remove(debug_system_label)
+    debug_system_label = None
 
 
 def show():
@@ -377,12 +534,7 @@ def show():
     # No offset
     base_surf.blit(draw_deck.surface, rect)
 
-    colors = [
-        WILDWHEEL["BLUE"],
-        WILDWHEEL["RED"],
-        WILDWHEEL["YELLOW"],
-        WILDWHEEL["GREEN"]
-    ]
+    colors = [WILDWHEEL[color] for color in WILD_ANIMATION_COLORS]
 
     # Initalize wildcard wheel quadrants
     for color in colors:
@@ -407,11 +559,11 @@ def show():
     # Write prompt
     medium_font = SharedObjects.get_small_font()
     prompt = medium_font.render(
-        "Pick a color (use arrow keys): ", True, (255, 255, 255))
+        "Bir renk sec (yon tuslarini kullan): ", True, (255, 255, 255))
     background.blit(prompt, (dim*(1-t), dim*(1-t)))
 
     confirm_msg = medium_font.render(
-        "press enter to select", True, (255, 255, 255))
+        "Secmek icin enter'a bas", True, (255, 255, 255))
     rect = confirm_msg.get_rect()
     # Position centered horizontally and 90% down the square
     rect.center = (dim*0.5, dim*0.9)
@@ -424,3 +576,5 @@ def show():
         centery=c.HALF_WINHEIGHT,
         hidden=False
     )
+
+    update_debug_system(None)

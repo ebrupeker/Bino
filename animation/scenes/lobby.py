@@ -3,7 +3,7 @@ import random
 import string
 
 from ..assets import BDECK as DECK
-from ..assets import INSTRUCTIONS_LEFT, INSTRUCTIONS_RIGHT, CS_PROFS
+from ..assets import INSTRUCTIONS_LEFT, INSTRUCTIONS_RIGHT
 from .. import constants as c
 from ..shared_objects import SharedObjects
 from ..animatable import Animatable
@@ -82,9 +82,7 @@ def clicked_cancel(point):
 
 def join_button_to_waiting():
     join_button.unfocus()
-    join_button.set_text("waiting")
-
-    show_text("Finding other players...", 5)
+    join_button.set_text("Bekleniyor")
 
 
 def show():
@@ -123,40 +121,6 @@ def show():
     disposable_animatables.queue.clear()
 
     #############################################################
-    # Spinning Heads
-    #############################################################
-
-    # Left side
-    left_heads = [Animatable(item, hidden=False, chain_movements=True)
-                  for item in CS_PROFS[:3]]
-    right_heads = [Animatable(item, hidden=False, chain_movements=True)
-                   for item in CS_PROFS[3:]]
-
-    for i, animatable in enumerate(left_heads):
-        animatable.instant_scale(c.WINHEIGHT * 0.0007)
-        animatable.instant_move(c.WINWIDTH * 1/7, c.WINHEIGHT * 9/8)
-        animatable.rotate(36000, 600)
-        animatable.freeze(i*10)
-        for _ in range(100):
-            animatable.move(c.WINWIDTH * 1/7, c.WINHEIGHT * 3/4, duration=2)
-            animatable.freeze()
-            animatable.move(c.WINWIDTH * 1/7, c.WINHEIGHT * 9/8, duration=2)
-            animatable.freeze(25.5)
-        animatables.append(animatable)
-
-    for i, animatable in enumerate(right_heads):
-        animatable.instant_scale(c.WINHEIGHT * 0.0007)
-        animatable.instant_move(c.WINWIDTH * 6/7, c.WINHEIGHT * 9/8)
-        animatable.rotate(36000, 600)
-        animatable.freeze(i*10 + 5)
-        for _ in range(100):
-            animatable.move(c.WINWIDTH * 6/7, c.WINHEIGHT * 3/4, duration=2)
-            animatable.freeze()
-            animatable.move(c.WINWIDTH * 6/7, c.WINHEIGHT * 9/8, duration=2)
-            animatable.freeze(25.5)
-        animatables.append(animatable)
-
-    #############################################################
     # User Name and Game ID Form
     #############################################################
 
@@ -192,7 +156,7 @@ def show():
 
     # Username label
     small_font = SharedObjects.get_small_font()
-    name_label = small_font.render("Enter username", True, c.LOBBY_TEXT_COLOR)
+    name_label = small_font.render("Kullanici adini gir", True, c.LOBBY_TEXT_COLOR)
     name_label = Animatable(name_label, c.WINWIDTH * -
                             1/8, NAME_LABEL_Y, hidden=False)
 
@@ -220,7 +184,7 @@ def show():
     # Using a text field for buttons because they provide similar functionality
     join_button = TextField(JOIN_BUTTON_X, JOIN_BUTTON_Y, JOIN_BUTTON_W,
                             active_color=c.LOBBY_JOIN_GAME_BACKGROUND_COLOR,
-                            inactive_color=c.LOBBY_WAITING_BACKGROUND_COLOR, placeholder="Join Game!")
+                            inactive_color=c.LOBBY_WAITING_BACKGROUND_COLOR, placeholder="Oyuna Katil!")
     join_button.focus()
     join_button.instant_move(c.WINWIDTH * 9/8, JOIN_BUTTON_Y)
     join_button.move(JOIN_BUTTON_X, JOIN_BUTTON_Y)
@@ -232,7 +196,7 @@ def show():
 
     # Using a text field for buttons because they provide similar functionality
     cancel_button = TextField(
-        CANCEL_BUTTON_X, CANCEL_BUTTON_Y, CANCEL_BUTTON_W, inactive_color=c.LOBBY_CANCEL_GAME_BACKGROUND_COLOR, placeholder="Cancel")
+        CANCEL_BUTTON_X, CANCEL_BUTTON_Y, CANCEL_BUTTON_W, inactive_color=c.LOBBY_CANCEL_GAME_BACKGROUND_COLOR, placeholder="Iptal")
     cancel_button.instant_move(c.WINWIDTH * 9/8, CANCEL_BUTTON_Y)
     cancel_button.move(CANCEL_BUTTON_X, CANCEL_BUTTON_Y)
 
@@ -322,7 +286,7 @@ def show():
     #################################################
     rlocation_iterations = 10
     for i in range(rlocation_iterations):
-        rx = random.randint(c.WINWIDTH * 1/4, c.WINWIDTH * 3/4)
+        rx = random.randint(c.WINWIDTH // 4, c.WINWIDTH * 3 // 4)
         ry = random.randint(0, c.HALF_WINHEIGHT)
         for card in cards:
             card.move(rx, ry, 1)
@@ -394,7 +358,7 @@ def show():
     random_shuffle_iterations = 100
     for card in cards:
         for i in range(random_shuffle_iterations):
-            card.move(random.randint(c.WINWIDTH * 1/4, c.WINWIDTH * 3/4),
+            card.move(random.randint(c.WINWIDTH // 4, c.WINWIDTH * 3 // 4),
                       random.randint(0, c.HALF_WINHEIGHT), random.randint(1, 3))
             card.freeze(random.randint(1, 3))
             card.move(center_x, center_y, random.randint(1, 3))

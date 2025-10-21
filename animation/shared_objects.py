@@ -1,5 +1,7 @@
 import copy
 import pygame
+import sys
+from pathlib import Path
 
 
 class DisposableAnimatables:
@@ -26,6 +28,14 @@ class DisposableAnimatables:
 
     def __len__(self):
         return len(self.queue)
+
+
+if hasattr(sys, "_MEIPASS"):
+    _BASE_PATH = Path(sys._MEIPASS) / "animation"
+else:
+    _BASE_PATH = Path(__file__).resolve().parent
+
+_FONT_PATH = _BASE_PATH / "assets" / "Acme-Regular.ttf"
 
 
 class SharedObjects:
@@ -112,7 +122,7 @@ class SharedObjects:
         """
         if SharedObjects.small_font is None:
             SharedObjects.small_font = pygame.font.Font(
-                "animation/assets/Acme-Regular.ttf", round(0.04*SharedObjects.get_surface().get_rect().h))
+                str(_FONT_PATH), round(0.04*SharedObjects.get_surface().get_rect().h))
         return SharedObjects.small_font
 
     @staticmethod
@@ -122,7 +132,7 @@ class SharedObjects:
         """
         if SharedObjects.medium_font is None:
             SharedObjects.medium_font = pygame.font.Font(
-                "animation/assets/Acme-Regular.ttf", round(0.05*SharedObjects.get_surface().get_rect().h))
+                str(_FONT_PATH), round(0.05*SharedObjects.get_surface().get_rect().h))
         return SharedObjects.medium_font
 
     @staticmethod
@@ -132,7 +142,7 @@ class SharedObjects:
         """
         if SharedObjects.large_font is None:
             SharedObjects.large_font = pygame.font.Font(
-                "animation/assets/Acme-Regular.ttf", round(0.06*SharedObjects.get_surface().get_rect().h))
+                str(_FONT_PATH), round(0.06*SharedObjects.get_surface().get_rect().h))
         return SharedObjects.large_font
 
     @staticmethod
@@ -142,5 +152,5 @@ class SharedObjects:
         """
         if SharedObjects.extra_large_font is None:
             SharedObjects.extra_large_font = pygame.font.Font(
-                "animation/assets/Acme-Regular.ttf", round(0.08*SharedObjects.get_surface().get_rect().h))
+                str(_FONT_PATH), round(0.08*SharedObjects.get_surface().get_rect().h))
         return SharedObjects.extra_large_font

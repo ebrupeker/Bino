@@ -36,11 +36,13 @@ class Player:
         else:
             choice = card
         curDiscard = self.hand.deck.getDiscard()
-        if choice.value in ["wild", "wild_draw"] and not accept_input:
+        if choice.value in ["wild", "wild_draw", "renk_degistir"] and not accept_input:
             count = {}
             for card in self.hand.cards:
-                count[card.color] = count.get(card.color, 0) + 1
-            colorChoice = max(count, key=lambda key: count[key])
+                color = getattr(card, "color", None)
+                if color and color not in ["wild", "special"]:
+                    count[color] = count.get(color, 0) + 1
+            colorChoice = max(count, key=lambda key: count[key]) if count else "yesil"
             print("Wild played as: ", colorChoice)
             choice.color = colorChoice
         if choice.match(curDiscard):
@@ -48,6 +50,5 @@ class Player:
             print(f"Player: {choice}")
             return True
         else:
-            print("Card does not match color or number.")
+            print("Card does not match color or system.")
             return False
-
