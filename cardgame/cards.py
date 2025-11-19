@@ -26,11 +26,20 @@ class Card:
     def _is_special(self):
         return self.value in SPECIAL_ALWAYS_MATCH or _normalize(self.color) in {"wild", "special"}
 
+    def _is_colorless_special(self):
+        if self.value in SPECIAL_ALWAYS_MATCH:
+            normalized_color = _normalize(self.color)
+            return normalized_color in (None, "wild", "special")
+        return _normalize(self.color) in {"wild", "special"}
+
     def match(self, other):
         if other is None:
             return True
 
-        if self._is_special() or other._is_special():
+        if self._is_special():
+            return True
+
+        if other._is_special() and other._is_colorless_special():
             return True
 
         same_color = (

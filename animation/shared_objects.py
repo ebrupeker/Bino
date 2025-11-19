@@ -73,8 +73,8 @@ class SharedObjects:
         drawn.
         """
         if SharedObjects.display_surf is None:
-            SharedObjects.display_surf = pygame.display.set_mode(
-               (0, 0), pygame.FULLSCREEN)
+            flags = pygame.FULLSCREEN | pygame.DOUBLEBUF
+            SharedObjects.display_surf = pygame.display.set_mode((0, 0), flags)
             # SharedObjects.display_surf = pygame.display.set_mode(
             #      (1800,1000))
             SharedObjects.base_surf = SharedObjects.display_surf.copy()
